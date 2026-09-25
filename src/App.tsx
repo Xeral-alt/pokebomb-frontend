@@ -151,6 +151,7 @@ export default function App() {
     }
 
     function onGameStarted() {
+      setSubmission(null);
       setGameEnded(null);
     }
 
@@ -160,12 +161,12 @@ export default function App() {
       }
 
       /*
-       * Si el turno termina,
-       * limpiamos todo el estado
-       * temporal del input/result.
+       * Si el turno termina por tiempo,
+       * solo limpiamos el input. El último
+       * intento queda visible hasta que
+       * alguien envíe otro.
        */
       setPokemon("");
-      setSubmission(null);
 
       if (value.playerId === socket.id) {
         playTimeoutSound();
@@ -209,11 +210,11 @@ export default function App() {
 
       socket.off("room-state", onRoomState);
 
-    socket.off("submission-result", onSubmission);
+      socket.off("submission-result", onSubmission);
 
-    socket.off("game-started", onGameStarted);
+      socket.off("game-started", onGameStarted);
 
-    socket.off("turn-result", onTurnResult);
+      socket.off("turn-result", onTurnResult);
 
       socket.off("game-ended", onGameEnded);
 
@@ -226,7 +227,7 @@ export default function App() {
    *
    * Cuando cambia currentPlayerId:
    * - limpia input
-   * - limpia Accepted / Rejected
+   * - conserva el último intento visible
    * - reproduce sonido si ahora es nuestro turno
    */
   useEffect(() => {
@@ -240,7 +241,6 @@ export default function App() {
 
     if (previousId !== null && currentId !== previousId) {
       setPokemon("");
-      setSubmission(null);
     }
 
     if (currentId && currentId !== previousId && currentId === socket.id) {
