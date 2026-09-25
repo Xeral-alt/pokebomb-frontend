@@ -106,7 +106,12 @@ export function Game({
       </div>
 
       <div className="mt-auto">
-        {submission && <SubmissionResult submission={submission} />}
+        {submission && (
+          <SubmissionResult
+            submission={submission}
+            players={[...room.players, ...room.spectators]}
+          />
+        )}
 
         <form onSubmit={submitPokemon} className="mt-4">
           <div

@@ -56,3 +56,9 @@ export type SubmissionResultData = {
 
   reason?: "not-pokemon" | "already-used" | "wrong-syllable" | string;
 };
+
+export type GameEndedData = {
+  winnerId: string | null;
+
+  winnerUsername: string | null;
+};

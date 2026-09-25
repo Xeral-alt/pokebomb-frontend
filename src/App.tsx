@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 
 import { socket } from "./lib/socket";
 
@@ -12,6 +19,7 @@ import {
 } from "./lib/sounds";
 
 import type {
+  GameEndedData,
   GameSettings,
   RoomState,
   SubmissionResultData,
@@ -25,6 +33,7 @@ import { Panel } from "./components/Panel";
 import { Settings } from "./components/Settings";
 import { Stat } from "./components/Stat";
 import { UserList } from "./components/UserList";
+import { WinnerScreen } from "./components/WinnerScreen";
 
 function getRoomIdFromUrl() {
   const parts = window.location.pathname.split("/").filter(Boolean);
@@ -51,10 +60,6 @@ type TurnResult = {
   reason?: string;
 };
 
-type GameEndedPayload = {
-  winnerId: string | null;
-};
-
 export default function App() {
   const initialRoomId = useMemo(() => getRoomIdFromUrl(), []);
 
@@ -78,11 +83,33 @@ export default function App() {
     null,
   );
 
-  const [now, setNow] = useState(Date.now());
+  const [gameEnded, setGameEnded] = useState<GameEndedData | null>(null);
+
+  const [now, setNow] = useState(() => Date.now());
 
   const previousPlayerId = useRef<string | null>(null);
 
   const previousStatus = useRef<RoomState["status"] | null>(null);
+
+  const notifyYourTurn = useCallback(() => {
+    if (
+      !("Notification" in window) ||
+      Notification.permission !== "granted" ||
+      (!document.hidden && document.hasFocus())
+    ) {
+      return;
+    }
+
+    const notification = new Notification("Es tu turno en PokémonBomb", {
+      body: "Escribe un Pokémon antes de que termine el tiempo.",
+      tag: roomId ? `pokebomb-${roomId}-turn` : "pokebomb-turn",
+    });
+
+    notification.onclick = () => {
+      window.focus();
+      notification.close();
+    };
+  }, [roomId]);
 
   /*
    * Actualiza timers visuales.
@@ -123,6 +150,10 @@ export default function App() {
       }
     }
 
+    function onGameStarted() {
+      setGameEnded(null);
+    }
+
     function onTurnResult(value: TurnResult) {
       if (value.reason !== "timeout") {
         return;
@@ -141,21 +172,20 @@ export default function App() {
       }
     }
 
-    function onGameEnded({ winnerId }: GameEndedPayload) {
+    function onGameEnded(value: GameEndedData) {
       /*
        * Reset completo del estado
        * visual de la partida.
        */
       setPokemon("");
       setSubmission(null);
+      setGameEnded(value);
 
       previousPlayerId.current = null;
 
       previousStatus.current = "lobby";
 
       playGameOverSound();
-
-      console.log("Ganador:", winnerId);
     }
 
     socket.on("connect", onConnect);
@@ -165,6 +195,8 @@ export default function App() {
     socket.on("room-state", onRoomState);
 
     socket.on("submission-result", onSubmission);
+
+    socket.on("game-started", onGameStarted);
 
     socket.on("turn-result", onTurnResult);
 
@@ -177,9 +209,11 @@ export default function App() {
 
       socket.off("room-state", onRoomState);
 
-      socket.off("submission-result", onSubmission);
+    socket.off("submission-result", onSubmission);
 
-      socket.off("turn-result", onTurnResult);
+    socket.off("game-started", onGameStarted);
+
+    socket.off("turn-result", onTurnResult);
 
       socket.off("game-ended", onGameEnded);
 
@@ -211,10 +245,11 @@ export default function App() {
 
     if (currentId && currentId !== previousId && currentId === socket.id) {
       playYourTurnSound();
+      notifyYourTurn();
     }
 
     previousPlayerId.current = currentId;
-  }, [room?.currentPlayerId]);
+  }, [room, notifyYourTurn]);
 
   /*
    * Protección adicional:
@@ -235,7 +270,19 @@ export default function App() {
     }
 
     previousStatus.current = room.status;
-  }, [room?.status]);
+  }, [room]);
+
+  async function requestTurnNotificationPermission() {
+    if (!("Notification" in window) || Notification.permission !== "default") {
+      return;
+    }
+
+    try {
+      await Notification.requestPermission();
+    } catch {
+      // Las notificaciones son opcionales.
+    }
+  }
 
   function createRoom() {
     const id = createRoomId();
@@ -253,6 +300,7 @@ export default function App() {
     setRoom(null);
     setPokemon("");
     setSubmission(null);
+    setGameEnded(null);
     setJoinError(null);
   }
 
@@ -276,9 +324,10 @@ export default function App() {
      */
     try {
       await unlockAudio();
+      await requestTurnNotificationPermission();
     } catch {
       // El juego puede seguir funcionando
-      // aunque audio falle.
+      // aunque audio o notificaciones fallen.
     }
 
     const emitJoin = () => {
@@ -303,6 +352,7 @@ export default function App() {
            * del backend.
            */
           setRoom(null);
+          setGameEnded(null);
           setJoined(true);
         },
       );
@@ -664,6 +714,19 @@ export default function App() {
                 setPokemon={setPokemon}
                 submitPokemon={submitPokemon}
                 submission={submission}
+              />
+            ) : gameEnded ? (
+              <WinnerScreen
+                winnerName={gameEnded.winnerUsername}
+                countdown={countdown}
+                canJoinGame={me?.role !== "player"}
+                onJoinGame={() => {
+                  setPokemon("");
+
+                  setSubmission(null);
+
+                  socket.emit("join-game");
+                }}
               />
             ) : (
               <Lobby room={room} countdown={countdown} isHost={isHost} />

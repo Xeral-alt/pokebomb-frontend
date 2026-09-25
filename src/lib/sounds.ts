@@ -33,7 +33,7 @@ function tone(
 
   const start = context.currentTime + (options?.delay ?? 0);
 
-  const volume = options?.volume ?? 0.06;
+  const volume = options?.volume ?? 0.09;
 
   oscillator.type = options?.type ?? "sine";
 
@@ -71,12 +71,12 @@ export function playCorrectSound() {
 export function playWrongSound() {
   tone(220, 0.12, {
     type: "sawtooth",
-    volume: 0.035,
+    volume: 0.06,
   });
 
   tone(164.81, 0.2, {
     type: "sawtooth",
-    volume: 0.035,
+    volume: 0.06,
     delay: 0.08,
   });
 }
@@ -84,12 +84,12 @@ export function playWrongSound() {
 export function playYourTurnSound() {
   tone(440, 0.08, {
     type: "square",
-    volume: 0.03,
+    volume: 0.08,
   });
 
   tone(659.25, 0.14, {
     type: "square",
-    volume: 0.03,
+    volume: 0.08,
     delay: 0.08,
   });
 }
@@ -97,28 +97,28 @@ export function playYourTurnSound() {
 export function playTimeoutSound() {
   tone(185, 0.2, {
     type: "sawtooth",
-    volume: 0.045,
+    volume: 0.075,
   });
 
   tone(120, 0.3, {
     type: "sawtooth",
-    volume: 0.045,
+    volume: 0.075,
     delay: 0.12,
   });
 }
 
 export function playGameOverSound() {
   tone(392, 0.15, {
-    volume: 0.05,
+    volume: 0.08,
   });
 
   tone(329.63, 0.15, {
-    volume: 0.05,
+    volume: 0.08,
     delay: 0.15,
   });
 
   tone(261.63, 0.35, {
-    volume: 0.05,
+    volume: 0.08,
     delay: 0.3,
   });
 }
