@@ -1,3 +1,5 @@
+import { useState, type KeyboardEvent } from "react";
+
 type Props = {
   label: string;
   value: number;
@@ -17,6 +19,55 @@ export function NumberSetting({
   max,
   suffix,
 }: Props) {
+  const [draft, setDraft] = useState("");
+
+  const [editing, setEditing] = useState(false);
+
+  const displayValue = editing ? draft : String(value);
+
+  function clampValue(nextValue: number) {
+    let safeValue = Math.floor(nextValue);
+
+    if (min !== undefined) {
+      safeValue = Math.max(min, safeValue);
+    }
+
+    if (max !== undefined) {
+      safeValue = Math.min(max, safeValue);
+    }
+
+    return safeValue;
+  }
+
+  function commitDraft() {
+    const nextValue = Number(displayValue);
+
+    if (!Number.isFinite(nextValue)) {
+      setDraft(String(value));
+
+      return;
+    }
+
+    const safeValue = clampValue(nextValue);
+
+    setDraft(String(safeValue));
+
+    if (safeValue !== value) {
+      onChange(safeValue);
+    }
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Enter") {
+      event.currentTarget.blur();
+    }
+
+    if (event.key === "Escape") {
+      setDraft(String(value));
+      event.currentTarget.blur();
+    }
+  }
+
   return (
     <label className="block">
       <div className="mb-2 flex items-center justify-between">
@@ -35,14 +86,17 @@ export function NumberSetting({
         type="number"
         min={min}
         max={max}
-        value={value}
-        onChange={(event) =>
-          onChange(
-            Number(
-              event.target.value,
-            ),
-          )
-        }
+        value={displayValue}
+        onFocus={() => {
+          setDraft(String(value));
+          setEditing(true);
+        }}
+        onChange={(event) => setDraft(event.target.value)}
+        onBlur={() => {
+          setEditing(false);
+          commitDraft();
+        }}
+        onKeyDown={handleKeyDown}
         className="w-full rounded-lg border border-white/[0.07] bg-[#0b0f12] px-3 py-2 text-sm font-bold text-zinc-300 outline-none focus:border-cyan-400/30"
       />
     </label>

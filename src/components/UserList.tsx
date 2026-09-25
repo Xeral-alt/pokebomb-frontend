@@ -42,7 +42,7 @@ export function UserList({
         <Badge variant={spectator ? "gray" : "cyan"}>{badge}</Badge>
       </div>
 
-      <div className="space-y-2">
+      <div className="scroll-panel max-h-[340px] space-y-2 overflow-y-auto pr-1">
         {users.map((user) => {
           const active = user.id === currentPlayerId;
 

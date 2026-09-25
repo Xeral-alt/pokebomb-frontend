@@ -5,6 +5,7 @@ export type Player = {
   username: string;
   role: UserRole;
   lives: number;
+  gamesWon: number;
 };
 
 export type GameSettings = {

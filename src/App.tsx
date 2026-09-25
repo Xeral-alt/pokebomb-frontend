@@ -27,6 +27,7 @@ import type {
 
 import { Badge } from "./components/Badge";
 import { Game } from "./components/Game";
+import { Leaderboard } from "./components/Leaderboard";
 import { Lobby } from "./components/Lobby";
 import { Page } from "./components/Page";
 import { Panel } from "./components/Panel";
@@ -412,11 +413,9 @@ export default function App() {
    * Datos derivados de room.
    */
 
-  const me = room
-    ? [...room.players, ...room.spectators].find(
-        (user) => user.id === socket.id,
-      )
-    : undefined;
+  const roomUsers = room ? [...room.players, ...room.spectators] : [];
+
+  const me = roomUsers.find((user) => user.id === socket.id);
 
   const isHost = room?.hostId === socket.id;
 
@@ -740,6 +739,11 @@ export default function App() {
             {isHost && room.status === "lobby" && (
               <Settings room={room} updateSetting={updateSetting} />
             )}
+
+            <Leaderboard
+              users={roomUsers}
+              currentPlayerId={room.currentPlayerId}
+            />
 
             <Panel className="p-5">
               <Badge variant="gray">Partida</Badge>
