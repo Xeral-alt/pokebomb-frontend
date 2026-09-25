@@ -719,6 +719,7 @@ export default function App() {
               <WinnerScreen
                 winnerName={gameEnded.winnerUsername}
                 countdown={countdown}
+                countdownSeconds={room.settings.countdownSeconds}
                 canJoinGame={me?.role !== "player"}
                 onJoinGame={() => {
                   setPokemon("");

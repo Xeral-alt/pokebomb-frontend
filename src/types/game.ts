@@ -54,6 +54,8 @@ export type SubmissionResultData = {
 
   pokemon?: string;
 
+  spriteUrl?: string | null;
+
   reason?: "not-pokemon" | "already-used" | "wrong-syllable" | string;
 };
 
